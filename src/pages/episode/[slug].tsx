@@ -6,30 +6,21 @@ import ptBr from "date-fns/locale/pt-BR";
 import convertDurationToTimeString from "../../utils/convertDurationToTimeString";
 import styles from './episode.module.scss';
 import Image from 'next/image';
-
-type File =  {
-    url: string,
-    type: string,
-    duration: string
-}
-
-type Espisodes = {
-    id: string,
-    title: string,
-    members: string,
-    published_at: string,
-    thumbnail: string,
-    description: string,
-    file: File
-}
+import {usePlayer} from "../../contexts/PlayerContext";
+import {Episodes} from "../index";
+import Head from "next/head";
 
 type EpisodeProps = {
-    episode: Espisodes
+    episode: Episodes
 }
 
 export default function Episode({episode}: EpisodeProps) {
+    const { play } = usePlayer();
     return (
         <div className={styles.episode}>
+            <Head>
+                <title>{episode.title} | Podcastrs</title>
+            </Head>
             <div className={styles.thumbnailContainer} >
                 <Link href="/" >
                 <button type="button">
@@ -42,7 +33,7 @@ export default function Episode({episode}: EpisodeProps) {
                     src={episode.thumbnail}
                     objectFit="cover"
                 />
-                <button type="button">
+                <button type="button" onClick={() => play(episode)}>
                     <img src="/play.svg" alt="Tocar Episodeo"/>
                 </button>
             </div>
@@ -50,7 +41,7 @@ export default function Episode({episode}: EpisodeProps) {
                 <h1>{episode.title}</h1>
                 <span>{episode.members}</span>
                 <span>{episode.published_at}</span>
-                <span>{episode.file.duration}</span>
+                <span>{episode.file.durationFormated}</span>
             </header>
             <div className={styles.description} dangerouslySetInnerHTML={{ __html: episode.description}}/>
         </div>

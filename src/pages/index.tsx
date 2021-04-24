@@ -1,18 +1,21 @@
 import {GetStaticProps}from 'next'
 import Link from 'next/link'
+import Head from 'next/head'
 import Image from 'next/image'
 import {api} from "../services/api";
 import {format, parseISO} from 'date-fns'
 import ptBr from 'date-fns/locale/pt-BR'
 import convertDurationToTimeString from "../utils/convertDurationToTimeString";
 import styles from './home.module.scss'
+import {usePlayer} from "../contexts/PlayerContext";
 type File =  {
   url: string,
   type: string,
-  duration: string
+  duration: number,
+  durationFormated: string,
 }
 
-type Espisodes = {
+export type Episodes = {
   id: string,
   title: string,
   members: string,
@@ -23,17 +26,24 @@ type Espisodes = {
 }
 
 type HomeProps = {
-    latestEpisodes: Array<Espisodes>
-    allEpisodes: Array<Espisodes>
+    latestEpisodes: Array<Episodes>
+    allEpisodes: Array<Episodes>
 }
 
 export default function Home({latestEpisodes, allEpisodes }: HomeProps) {
+
+  const {playList} = usePlayer();
+  const episodesList = [...latestEpisodes, ...allEpisodes];
+
   return (
       <div className={styles.homepage}>
+          <Head>
+              <title>Home | Podcastrs</title>
+          </Head>
           <section className={styles.latestEpisodes}>
               <h2>Últimos lançamentos</h2>
               <ul>
-                  {latestEpisodes.map(episode => (
+                  {latestEpisodes.map((episode, index) => (
                       <li key={episode.id}>
                           <div style={{ width: 100}}>
                               <Image
@@ -50,9 +60,9 @@ export default function Home({latestEpisodes, allEpisodes }: HomeProps) {
                               </Link>
                               <p>{episode.members}</p>
                               <span>{episode.published_at}</span>
-                              <span>{episode.file.duration}</span>
+                              <span>{episode.file.durationFormated}</span>
                           </div>
-                          <button type="button">
+                          <button onClick={() => playList(episodesList, index)}  type="button">
                               <img src="/play-green.svg" alt="Tocar Episodeo"/>
                           </button>
                       </li>
@@ -75,7 +85,7 @@ export default function Home({latestEpisodes, allEpisodes }: HomeProps) {
                   </thead>
                   <tbody>
                   {
-                      allEpisodes.map( episode => (
+                      allEpisodes.map( (episode, index) => (
                           <tr key={episode.id}>
                               <td style={{ width: 72}}>
                                   <Image
@@ -93,9 +103,9 @@ export default function Home({latestEpisodes, allEpisodes }: HomeProps) {
                               </td>
                               <td>{episode.members}</td>
                               <td style={{ width: 100}}>{episode.published_at}</td>
-                              <td>{episode.file.duration}</td>
+                              <td>{episode.file.durationFormated}</td>
                               <td>
-                                  <button type="button">
+                                  <button type="button" onClick={() => playList(episodesList, index + latestEpisodes.length)}>
                                       <img src="/play-green.svg" alt="Tocar episódio" />
                                   </button>
                               </td>
@@ -121,13 +131,14 @@ export const getStaticProps : GetStaticProps = async () => {
       });
 
 
-  const episodes = data.map( (episode : Espisodes) => {
+  const episodes = data.map( (episode : Episodes) => {
     return {
         ...episode,
         published_at: format(parseISO(episode.published_at), 'd MMM yy', {locale: ptBr}),
         file: {
             ...episode.file,
-            duration: convertDurationToTimeString(Number(episode.file.duration))
+            durationFormated: convertDurationToTimeString(Number(episode.file.duration)),
+            duration: Number(episode.file.duration)
         }
     }
   });
